@@ -1,0 +1,32 @@
+# Large downloaded datasets
+/data/
+
+# Generated working files and results
+/work/
+/results/
+/logs/
+
+# Generated BPP alignment inputs
+/bpp/test_runs/input/*.phy
+
+# BPP run outputs
+*.SeedUsed
+*.mcmc.txt
+*.mcmc.txt.processed
+*.compressed-aln.phy
+*.conditional_a1b1.txt
+*.FakeTree.tre
+*.FigTree.tre
+*.screen.log
+*.pdf
+*.out
+/bpp/test_runs/**/out.txt
+/bpp/test_runs/**/msci_test.txt
+
+# Temporary and editor files
+*.old
+*.bak
+*~
+.DS_Store
+__pycache__/
+*.py[cod]
