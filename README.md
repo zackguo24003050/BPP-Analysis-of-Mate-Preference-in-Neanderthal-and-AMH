@@ -1,66 +1,51 @@
 # BPP Input Preparation
 
-BPP requires three input files:
+BPP requires:
 
-1. Multilocus sequence alignment file
+1. Multilocus sequence alignment
 2. Imap file
 3. Control file
 
-## 1. Multilocus Sequence Alignment
+## 1. Required Data
 
-### Required data
+### Reference genome
 
-#### Reference genome
-
-Downloaded in:
+Downloaded:
 
 ```text
-data/reference/
+data/reference/human_g1k_v37.fasta
+data/reference/human_g1k_v37.fasta.fai
 ```
 
-Example:
+Assembly:
 
 ```text
-GRCh37.fa
+GRCh37 / hg19
 ```
-
-The reference genome provides bases for invariant sites.
 
 Source:
 
-https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/
+[https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/](https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/)
 
-#### Modern-human VCF files
+### Modern-human VCF files
 
 Eight YRI samples from 1000 Genomes chromosome X have been downloaded.
 
-The data used in the paper require authorized access:
+Public source:
 
-https://dbgap.ncbi.nlm.nih.gov/beta/study/phs001396.v1.p1/#authorized-data-access-requests
+[https://www.internationalgenome.org/data-portal/sample](https://www.internationalgenome.org/data-portal/sample)
 
-Possible alternative public sources:
+Data used in the reference paper require authorized access:
 
-**1000 Genomes Project**
+[https://dbgap.ncbi.nlm.nih.gov/beta/study/phs001396.v1.p1/#authorized-data-access-requests](https://dbgap.ncbi.nlm.nih.gov/beta/study/phs001396.v1.p1/#authorized-data-access-requests)
 
-More standardized, but contains fewer African populations.
+SGDP is another possible source with more diverse African populations, including YRI, ESN, MSL, LMK, and GMD, but reference-genome compatibility must be checked.
 
-https://www.internationalgenome.org/data-portal/sample
+[https://reichdata.hms.harvard.edu/pub/datasets/sgdp/](https://reichdata.hms.harvard.edu/pub/datasets/sgdp/)
 
-**Simons Genome Diversity Project**
+Sample metadata and VCF indexes are also required.
 
-Contains 279 samples and more diverse African populations, but uses a different reference genome.
-
-https://reichdata.hms.harvard.edu/pub/datasets/sgdp/
-
-Candidate populations:
-
-```text
-YRI ESN MSL LMK GMD
-```
-
-Sample metadata are also required.
-
-#### Neanderthal VCF files
+### Neanderthal VCF files
 
 Altai has been downloaded for the main analysis.
 
@@ -68,67 +53,188 @@ Chagyrskaya and Vindija may be used for replication.
 
 Sources:
 
-- https://www.eva.mpg.de/genetics/genome-projects/neandertal/
-- https://ftp.eva.mpg.de/neandertal/altai/AltaiNeandertal/VCF/
-- https://ftp.eva.mpg.de/neandertal/Chagyrskaya/VCF/
-- http://cdna.eva.mpg.de/neandertal/Vindija/VCF/Vindija33.19/
+- [https://www.eva.mpg.de/genetics/genome-projects/neandertal/](https://www.eva.mpg.de/genetics/genome-projects/neandertal/)
+- [https://ftp.eva.mpg.de/neandertal/altai/AltaiNeandertal/VCF/](https://ftp.eva.mpg.de/neandertal/altai/AltaiNeandertal/VCF/)
+- [https://ftp.eva.mpg.de/neandertal/Chagyrskaya/VCF/](https://ftp.eva.mpg.de/neandertal/Chagyrskaya/VCF/)
+- [http://cdna.eva.mpg.de/neandertal/Vindija/VCF/Vindija33.19/](http://cdna.eva.mpg.de/neandertal/Vindija/VCF/Vindija33.19/)
 
-#### Callable masks
+### Callable mask
 
-Callable or mask BED files define reliable genomic regions.
+Downloaded:
 
-A missing VCF record should only be treated as the reference allele when the site is callable. Otherwise, the site should be masked as `N`, or the window should be removed.
+```text
+data/masks/20141020.strict_mask.whole_genome.bed
+data/masks/strict_mask.chrX.bed
+data/masks/strict_mask.X.bed
+```
 
-#### VCF indexes
+Source:
 
-Each VCF file requires an index file.
+[https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/supporting/accessible_genome_masks/](https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/supporting/accessible_genome_masks/)
 
-### Current data
+The mask defines regions considered reliable under the 1000 Genomes accessibility criteria.
 
-The current dataset contains:
+A missing VCF record should only be treated as the reference allele when the site is callable. Otherwise, the site should be masked as `N`, or the locus should be removed.
 
-- Eight YRI samples
-- A strict mask
-- A reference genome
-- Altai Neanderthal data
+## 2. Region Partitioning
 
-The VCF records bases that differ from the reference genome. The mask identifies reliable regions, while the reference FASTA provides the complete reference sequence.
+The callable mask defines technical reliability. The following annotations have been downloaded to separate putatively neutral, exonic, and regulatory regions.
 
-### Processing workflow
+### Directory structure
+
+```text
+data/
+├── annotations/
+│   ├── gencode/
+│   ├── regulatory/
+│   ├── conservation/
+│   └── optional_masks/
+├── masks/
+└── windows/
+    ├── neutral/
+    ├── exon/
+    └── regulatory/
+```
+
+### Annotation sources
+
+| Annotation | Purpose | Downloaded file | Source |
+|---|---|---|---|
+| GENCODE v19 | Identify exons and UTRs | `data/annotations/gencode/gencode.v19.annotation.gtf.gz` | [https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_19/gencode.v19.annotation.gtf.gz](https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_19/gencode.v19.annotation.gtf.gz) |
+| ENCODE cCREs | Identify candidate regulatory elements | `data/annotations/regulatory/ENCFF788SJC.bed.gz` | [https://www.encodeproject.org/files/ENCFF788SJC/](https://www.encodeproject.org/files/ENCFF788SJC/) |
+| phastCons 100-way | Identify conserved elements | `data/annotations/conservation/phastConsElements100way.txt.gz` | [https://hgdownload.soe.ucsc.edu/goldenPath/hg19/database/phastConsElements100way.txt.gz](https://hgdownload.soe.ucsc.edu/goldenPath/hg19/database/phastConsElements100way.txt.gz) |
+| RepeatMasker | Optional repeat exclusion | `data/annotations/optional_masks/rmsk.txt.gz` | [https://hgdownload.soe.ucsc.edu/goldenPath/hg19/database/rmsk.txt.gz](https://hgdownload.soe.ucsc.edu/goldenPath/hg19/database/rmsk.txt.gz) |
+| Segmental duplications | Optional duplication exclusion | `data/annotations/optional_masks/genomicSuperDups.txt.gz` | [https://hgdownload.soe.ucsc.edu/goldenPath/hg19/database/genomicSuperDups.txt.gz](https://hgdownload.soe.ucsc.edu/goldenPath/hg19/database/genomicSuperDups.txt.gz) |
+| 100-mer mappability | Optional mappability filter | `data/annotations/optional_masks/wgEncodeCrgMapabilityAlign100mer.bigWig` | [https://hgdownload.soe.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeMapability/](https://hgdownload.soe.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeMapability/) |
+| GRCh37 PAR regions | Exclude pseudoautosomal regions from chromosome-X analysis | `data/annotations/optional_masks/GRCh37_PAR.bed` | [https://www.ncbi.nlm.nih.gov/grc/human](https://www.ncbi.nlm.nih.gov/grc/human) |
+
+The downloaded gzip files passed integrity checks. The mappability file has a valid BigWig header.
+
+### Partition definitions
+
+#### Putatively neutral noncoding regions
+
+```text
+strict callable mask
+− exons
+− UTRs
+− ENCODE regulatory elements
+− conserved elements
+− chromosome-X PAR regions
+```
+
+RepeatMasker, segmental duplications, and low-mappability regions may be added as stricter filters.
+
+Output:
+
+```text
+data/windows/neutral/autosomes.5kb.50kb_gap.bed
+data/windows/neutral/chrX.5kb.50kb_gap.bed
+```
+
+Planned sampling:
+
+- Locus length: 5 kb
+- Approximately 50 kb between loci
+- Identical filtering rules for autosomes and chromosome X
+
+#### Exon regions
+
+Defined using GENCODE v19 features labelled as `exon`.
+
+Output:
+
+```text
+data/windows/exon/autosomes.exon.bed
+data/windows/exon/chrX.exon.bed
+```
+
+#### Regulatory regions
+
+Defined using ENCODE candidate cis-regulatory elements.
+
+Output:
+
+```text
+data/windows/regulatory/autosomes.ccre.bed
+data/windows/regulatory/chrX.ccre.bed
+```
+
+### Coordinate rules
+
+All processed BED files must use:
+
+```text
+0-based, half-open coordinates
+```
+
+GENCODE GTF coordinates are 1-based and must be converted before BED operations.
+
+Chromosome names must match the current reference and VCF files:
+
+```text
+1, 2, ..., 22, X
+```
+
+Files using `chr1` or `chrX` must be normalized before intersection.
+
+## 3. Alignment Workflow
 
 ```text
 Reference FASTA
         +
-Sample VCF
+Sample VCF files
+        +
+Callable and annotation masks
         ↓
-Per-sample consensus sequences
+Define genomic partitions
         ↓
-Select reliable windows using the strict mask
+Select loci
         ↓
-Extract the same windows from all samples
+Construct per-sample consensus sequences
+        ↓
+Mask unreliable bases as N
         ↓
 One window = one locus alignment
         ↓
-Combine loci into a multilocus BPP alignment
+Combine loci into a BPP multilocus alignment
 ```
 
-Current window size:
+## 4. Current Test Data
+
+Current chromosome-X test windows:
 
 ```text
-10 kb
+work/test10_alignment/windows10.bed
+work/chrX_100_alignment/windows100.bed
 ```
 
-## 2. Imap File
+These are 10-kb test windows selected using the strict mask. They are not the final 5-kb putatively neutral loci.
 
-The Imap file for eight YRI samples and Altai Neanderthal is complete.
-
-Location:
+Current BPP alignments:
 
 ```text
-/mnt/yanglab-bignas/data2/zack/bpp_neanderthal_introgression/bpp/test_runs/input/
+bpp/test_runs/input/YRI8_Altai.chrX.test1.phy
+bpp/test_runs/input/YRI8_Altai.chrX.test10.phy
+bpp/test_runs/input/YRI8_Altai.chrX.test100.phy
 ```
 
-## 3. Control Files
+Each test locus contains:
+
+- 12 YRI chromosome-X haplotypes
+- 1 Altai Neanderthal sequence
+
+## 5. Imap File
+
+Completed:
+
+```text
+bpp/test_runs/input/YRI8_Altai.chrX.Imap.txt
+```
+
+This maps the YRI haplotypes to YRI and the Altai sequence to Neanderthal.
+
+## 6. Control Files
 
 ### MSC test
 
@@ -137,14 +243,6 @@ Control file:
 ```text
 bpp/test_runs/A00_readtest/r1/test10.A00.ctl
 ```
-
-Dataset:
-
-- 10 chromosome-X loci
-- One 10-kb window per locus
-- 13 sequences per locus
-- 12 YRI chromosome-X haplotypes
-- 1 Altai Neanderthal sequence
 
 Settings:
 
@@ -166,20 +264,14 @@ thetaprior = 3 0.002 e
 tauprior = 3 0.002
 ```
 
-Theta and tau are positive mutation-scaled parameters. The preliminary test uses inverse-gamma priors:
-
-```text
-IG(3, 0.002)
-```
-
-The prior mean is 0.001. This broad prior is reasonable for a preliminary read test using closely related human and Neanderthal sequences, but it may need adjustment for the final introgression analysis.
+The preliminary test uses `IG(3, 0.002)`, with prior mean 0.001. These settings are for format testing and may be adjusted for the final analysis.
 
 ### MSC-I test
 
 Location:
 
 ```text
-/mnt/yanglab-bignas/data2/zack/bpp_neanderthal_introgression/bpp/test_runs/MSCi_test/
+bpp/test_runs/MSCi_test/
 ```
 
 Model:
@@ -190,17 +282,7 @@ species&tree = 2 YRI Neanderthal
 ((YRI,Y[&phi=0.050000])X,(Neanderthal,X[&phi=0.050000])Y)R;
 ```
 
-This is a fixed two-population MSC-I model with YRI and Neanderthal.
-
-The extended Newick network contains one bidirectional introgression event. `X` and `Y` are internal hybrid nodes used by BPP.
-
-The values:
-
-```text
-phi = 0.05
-```
-
-are starting values, not fixed final estimates.
+`X` and `Y` are internal hybrid nodes. The `phi = 0.05` values are starting values, not fixed estimates.
 
 Prior:
 
@@ -208,4 +290,4 @@ Prior:
 phiprior = 1 1
 ```
 
-This assigns a uniform `Beta(1,1)` prior to the introgression probability. It is appropriate for an initial MSC-I validation run, but should be reviewed through sensitivity analysis before final biological interpretation.
+This assigns a uniform `Beta(1,1)` prior to the introgression probability. The prior should be reviewed through sensitivity analysis before final biological interpretation.
